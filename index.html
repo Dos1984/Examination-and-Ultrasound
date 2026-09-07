@@ -700,12 +700,13 @@ const BG_PRESETS = [
   { id: 'sage',  name: 'Soft sage',  bg: '#E8EEE7' },
   { id: 'sand',  name: 'Clinic sand', bg: '#EFEBE6' }
 ];
-const DEFAULTS = { bg: '#EAEFEF', figure: 'silhouette' };
+const DEFAULTS = { bg: '#EAEFEF', figure: 'illustration' };
 let CFG = { ...DEFAULTS };
 
 try {
   const saved = JSON.parse(localStorage.getItem('msk.settings') || 'null');
   if (saved && typeof saved === 'object') CFG = { ...CFG, ...saved };
+  if (CFG.figure === 'silhouette') CFG.figure = 'illustration';
 } catch (e) { /* storage unavailable — settings simply won't persist */ }
 
 function saveCfg() {
@@ -725,31 +726,6 @@ const FIGURE_SVG = "<path stroke=\"none\" d=\"M 200 96 C 216 86, 244 86, 260 96 
    anatomy is the navigation, not only the marker. */
 
 const FIGURES = {
-  silhouette: {
-    label: 'Silhouette',
-    viewBox: '22 6 418 440',
-    labelX: [112, 348],
-    art: () => `<defs><linearGradient id="bmg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="452">
-        <stop offset="0" stop-color="#CFDCDD"/><stop offset="1" stop-color="#AFC5C8"/></linearGradient></defs>
-      <g class="bm-body" fill="url(#bmg)" stroke="url(#bmg)" stroke-linecap="round">${FIGURE_SVG}</g>`,
-    spots: [
-      { id: 'shoulder', x: 196, y: 108, side: 'l', ly: 108,
-        zones: [[196, 112, 20, 22], [264, 112, 20, 22]] },
-      { id: 'elbow', x: 181, y: 192, side: 'l', ly: 192,
-        zones: [[181, 192, 15, 24], [279, 192, 15, 24]] },
-      { id: 'hand', x: 170, y: 250, side: 'l', ly: 252,
-        zones: [[169, 258, 14, 28], [291, 258, 14, 28]] },
-      { id: 'lumbar', x: 230, y: 196, side: 'r', ly: 188, dashed: true, note: 'posterior',
-        zones: [[230, 196, 26, 28]] },
-      { id: 'hip', x: 248, y: 238, side: 'r', ly: 246,
-        zones: [[206, 236, 19, 21], [254, 236, 19, 21]] },
-      { id: 'knee', x: 207, y: 318, side: 'l', ly: 318,
-        zones: [[207, 318, 17, 26], [253, 318, 17, 26]] },
-      { id: 'foot', x: 203, y: 404, side: 'l', ly: 406,
-        zones: [[201, 412, 16, 28], [259, 412, 16, 28]] }
-    ]
-  },
-
   illustration: {
     label: 'Illustration',
     viewBox: '0 0 460 605',
@@ -777,7 +753,7 @@ const FIGURES = {
 };
 
 function bodyMap() {
-  const fig = FIGURES[CFG.figure] || FIGURES.silhouette;
+  const fig = FIGURES.illustration;
   const ringR = fig.ring || 11;
   const [lxL, lxR] = fig.labelX;
 
@@ -802,7 +778,7 @@ function bodyMap() {
       </g>`;
   }).join('');
 
-  return `<svg class="bodymap" viewBox="${fig.viewBox}" role="group" aria-label="Body map — choose a region">
+  return `<svg class="bodymap" viewBox="${fig.viewBox}" role="group" aria-label="Regional illustration — choose a region">
       ${fig.art()}${spots}</svg>`;
 }
 
@@ -816,7 +792,7 @@ function renderHome() {
     <div class="hero">
       <span class="eyebrow">Clinical reference &middot; 7 regions</span>
       <h1>Examination, focused ultrasound, US-guided and landmark injection, region by region.</h1>
-      <p>Pick a region on the body map or from the list. Each one opens with the examination
+      <p>Pick a region on the illustration or from the list. Each one opens with the examination
          sequence first, then focused ultrasound imaging, US-guided procedures and landmark injection approaches, doses and safety notes drawn from your handbooks.</p>
     </div>
     <div class="home-grid">
@@ -1187,18 +1163,14 @@ qInput.onkeydown = e => {
 function paintSettings() {
   $('#setBody').innerHTML = `
     <div class="setgroup">
-      <span class="eyebrow">Body diagram</span>
-      <div class="figchoice">
-        ${Object.entries(FIGURES).map(([k, f]) => `
-          <button class="figopt ${CFG.figure === k ? 'on' : ''}" data-figure="${k}"
-            aria-pressed="${CFG.figure === k}">
-            <span class="figprev">${k === 'silhouette'
-              ? `<svg viewBox="150 0 160 452" fill="#B9CCCE" stroke="#B9CCCE" stroke-linecap="round">${FIGURE_SVG}</svg>`
-              : `<img src="${IMG.__body}" alt="">`}</span>
-            <span class="figname">${f.label}</span>
-          </button>`).join('')}
+      <span class="eyebrow">Regional illustration</span>
+      <div class="figchoice" style="grid-template-columns:1fr">
+        <div class="figopt on" aria-label="Regional illustration">
+          <span class="figprev"><img src="${IMG.__body}" alt="Regional anatomical illustration"></span>
+          <span class="figname">Illustration</span>
+        </div>
       </div>
-      <p class="sethint">Both diagrams are fully clickable — select a body part or its label.</p>
+      <p class="sethint">Use the anatomical illustration or its labels to select a region.</p>
     </div>
     <div class="setgroup">
       <span class="eyebrow">Background</span>
@@ -1219,10 +1191,6 @@ function paintSettings() {
     <div class="setgroup">
       <button class="resetbtn" id="resetCfg">Reset to defaults</button>
     </div>`;
-
-  $('#setBody').querySelectorAll('[data-figure]').forEach(b => b.onclick = () => {
-    CFG.figure = b.dataset.figure; applyCfg(); paintSettings(); refreshHome();
-  });
   $('#setBody').querySelectorAll('[data-bg]').forEach(b => b.onclick = () => {
     CFG.bg = b.dataset.bg; applyCfg(); paintSettings();
   });
